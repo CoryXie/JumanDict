@@ -32,7 +32,10 @@ def mainloop(records, orderby):
             rows = dictcursor.execute("SELECT id, name, desc, count FROM words ORDER BY {} DESC LIMIT {}".format(orderby, records)).fetchall()
             words = len(rows)
             if words > 0:
-                print("最近保存过的{}个单词：".format(words))
+                if orderby == "id":
+                    print("最近保存过的{}个单词（最近优先排序）：".format(words))
+                else:
+                    print("出现频率最高的{}个单词（高频优先排序）：".format(words))
             count = 0
             for row in rows:
                 print('{} [{} ({}次)]:\n'.format(row[0], row[1], row[3]))
