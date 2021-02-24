@@ -7,11 +7,11 @@ Japanese is a complex language, it builds up a sentence with mix of Kanji and Ka
 
 So I need a tool to help break down the setence in grammarly correct parts, better, it can help get to the meaning of these words automatically. I also wanted to be able to save these words ever leart (meaning I tried to search for their meanings) and be able to review later, better, it can help me get the frequence it occured to me (thus the significance of remembering these words).
 
-With these expectations, I found some way to breakdown the sentence into grammarly correct parts using Juman (https://github.com/ku-nlp/jumanpp) and further KNP (https://github.com/ku-nlp/knp), further, based on the borken down parts (the dictionary form of words) I can search through the dictionary (https://github.com/neocl/jamdict) to get to the meaning. I could then use Python with SQLite to save the words from the sentences I searched, with meaning and occurence count (frequence) information.
+With these expectations, I found some way to breakdown the sentence into grammarly correct parts using Juman (https://github.com/ku-nlp/jumanpp) and further KNP (https://github.com/ku-nlp/knp), further, based on the broken down parts (the dictionary form of words) I can search through the Jamdict dictionary (https://github.com/neocl/jamdict) to get to the meaning. I could then use Python with SQLite to save the words from the sentences I searched, with meaning and occurence count (frequence) information.
 
 # Current Status
 
-Currently it is a POC rototype with basic CLI loop, accepting a sentence or a paragraph and shows everything it parses, recording in a SQLite database and shows the recordings on each loop.
+Currently it is a POC prototype with basic CLI loop, accepting a sentence or a paragraph and shows everything it parses, recording in a SQLite database and shows the recordings on each loop.
 
 # Next Plans
 

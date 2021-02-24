@@ -4,6 +4,7 @@ from pyknp import KNP
 from jamdict import Jamdict
 import sqlite3
 import sys
+import click
 
 jmd = Jamdict()
 knp = KNP()
@@ -13,28 +14,28 @@ dictcursor = jumandict.cursor()
 dictcursor.execute("CREATE TABLE IF NOT EXISTS words (id INTEGER PRIMARY KEY, name TEXT UNIQUE, desc TEXT, count INTEGER)")
 
 while True:
-#    line = input('请输入日语句子：')
-#    while not line:
-#        print('你啥都没输入哦！')
-#        line = input('请输入日语句子：')
+    try:
+        if not click.confirm('想要进入编辑器输入日文句子或段落进行分析吗?'):
+            continue
+    except EOFError:
+        break
+    except click.Abort:
+        break
+    rows = dictcursor.execute("SELECT id, name, desc, count FROM words").fetchall()
+    words = len(rows)
+    if words > 0:
+        print("已经分析并保存过{}个单词：".format(words))
+    for row in rows:
+        print('{} [{} ({}次)]:\n'.format(row[0], row[1], row[3]))
+        print(row[2])
 
-    lines = ""
-    while True:
-        if lines == "":
-            print("你已经保存过：")
-            rows = dictcursor.execute("SELECT id, name, desc, count FROM words").fetchall()
-            for row in rows:
-                print('{} [{} ({}次)]:\n'.format(row[0], row[1], row[3]))
-                print(row[2])
-            print("请输入日语句子：")
-        x = input()
-        if x == "" and lines != "":
-            break
-        else:
-            lines += x
+    userinput = click.edit()
+    if userinput is None:
+        print("你啥也没输入啊！")
+        continue
 
-    userinput = lines.strip()
-    #userinput = userinput.replace("\␣", "")
+    userinput = userinput.strip()
+    userinput = userinput.encode('utf-8','surrogatepass').decode('utf-8')
     if userinput == 'q':
         break
 
@@ -42,18 +43,6 @@ while True:
     print(userinput)
  
     result = knp.parse(userinput)
-
-#   print("=================================")
-#   print("词组")
-#   for bnst in result.bnst_list(): # 访问每个词组
-#       print("\tID:%d, 标题:%s, 依赖类型:%s, 父词组ID:%d, 特征:%s" \
-#               % (bnst.bnst_id, "".join(mrph.midasi for mrph in bnst.mrph_list()), bnst.dpndtype, bnst.parent_id, bnst.fstring))
-
-#   print("=================================")
-#   print("基本句")
-#   for tag in result.tag_list(): # 访问每个基本句
-#       print("\tID:%d, 标题:%s, 依赖类型:%s, 父基本句ID:%d, 特征:%s" \
-#               % (tag.tag_id, "".join(mrph.midasi for mrph in tag.mrph_list()), tag.dpndtype, tag.parent_id, tag.fstring))
 
     print("=================================")
     print("词素")
@@ -78,14 +67,6 @@ while True:
                                 .format(mrph.genkei.replace('"', '""'), desc.replace('"', '""'), 1))
     jumandict.commit()
 
-#   print("=================================")
-#   print("基本句树")
-#   result.draw_tag_tree()
-
-#    print("=================================")
-#    print("词组树")
-#    result.draw_bnst_tree()
-
     print("=================================")
     length = 0
     for bnst in result.bnst_list(): # 访问每个词组
@@ -94,4 +75,5 @@ while True:
         print("  " * length + phrase)
         length = length + len(phrase)
 
+print("\n你选择退出了哦！")
 jumandict.close()
