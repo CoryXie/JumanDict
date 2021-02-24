@@ -49,7 +49,7 @@ while True:
     for mrph in result.mrph_list(): # 访问每个词素
         if mrph.midasi in {"、", "。", "「", "」", "\␣"}:
             continue
-        print("\tID:%d, 标题:%s, 读法:%s, 原形:%s, 词性:%s, 词性细分:%s, 活用型:%s, 活用形:%s, 语义信息:%s, 代表符号:%s" \
+        print("\tID:%d, 词汇:%s, 读法:%s, 原形:%s, 词性:%s, 词性细分:%s, 活用型:%s, 活用形:%s, 语义信息:%s, 代表符号:%s" \
                 % (mrph.mrph_id, mrph.midasi, mrph.yomi, mrph.genkei, mrph.hinsi, mrph.bunrui, mrph.katuyou1, mrph.katuyou2, mrph.imis, mrph.repname))
         # use exact matching to find exact meaning
         dictcheck = jmd.lookup(mrph.genkei)
@@ -68,12 +68,16 @@ while True:
     jumandict.commit()
 
     print("=================================")
+    print(userinput)
+    print("=================================")
     length = 0
     for bnst in result.bnst_list(): # 访问每个词组
         phrase = "".join(mrph.midasi for mrph in bnst.mrph_list())
         phrase = phrase.replace("\␣", " ")
         print("  " * length + phrase)
         length = length + len(phrase)
+        if length > 80:
+            length = 0
 
 print("\n你选择退出了哦！")
 jumandict.close()
