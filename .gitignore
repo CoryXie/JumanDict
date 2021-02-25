@@ -130,4 +130,5 @@ dmypy.json
 
 # Local test generated data
 
-records.db
+*.db
+*.txt
