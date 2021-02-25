@@ -9,7 +9,7 @@ import click
 @click.command()
 @click.option('--file', '-f', default="", help='File to be analyzed for study.')
 @click.option('--savedump', '-s', default="dumping.txt", help='File to be saved with dump for study.')
-@click.option('--database', '-d', default="records.db", help='File to be analyzed for study.')
+@click.option('--database', '-d', default="records.db", help='Database file to be used for record saving.')
 @click.option('--records', '-r', default=5, help='Number of history records to show.')
 @click.option('--orderby', '-o', default="id", type=click.Choice(['id', 'count'], case_sensitive=False),
                 help='Sort order of history records to show.')
