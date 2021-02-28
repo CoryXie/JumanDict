@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from pyknp import Juman
 from pyknp import KNP
@@ -72,7 +73,7 @@ def mainloop(file, database, savedump, records, orderby):
         for mrph in result.mrph_list(): # 访问每个词素
             if mrph.midasi in {"、", "。", "「", "」", "\␣"}:
                 continue
-            message = "\tID:{}, 词汇:{}, 读法:{}, 原形:{}, 词性:{}, 词性细分:{}, 活用型:(), 活用形:{}, 语义信息:{}, 代表符号:{}".format(
+            message = "\tID:{}, 词汇:{}, 读法:{}, 原形:{}, 词性:{}, 词性细分:{}, 活用型:{}, 活用形:{}, 语义信息:{}, 代表符号:{}".format(
                 mrph.mrph_id, mrph.midasi, mrph.yomi, mrph.genkei, mrph.hinsi, mrph.bunrui, mrph.katuyou1, mrph.katuyou2, mrph.imis, mrph.repname);
             print(message)
             dumper.write(message + "\n")
