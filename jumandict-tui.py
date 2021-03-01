@@ -23,6 +23,7 @@ def mainloop(file, database, savedump, records, orderby):
     dictcursor = jumandict.cursor()
     dictcursor.execute("CREATE TABLE IF NOT EXISTS words (id INTEGER PRIMARY KEY, name TEXT UNIQUE, desc TEXT, count INTEGER)")
     dumper = open(savedump, 'w')
+    dumper.write("# 日语学习记录\n\n")
 
     while True:
         userinput = ""
@@ -64,19 +65,30 @@ def mainloop(file, database, savedump, records, orderby):
 
         print("=================================")
         print(userinput)
-        dumper.write(userinput + "\n\n")
+        dumper.write("## "+ userinput + "\n\n")
 
         result = knp.parse(userinput.replace("\n", ""))
 
+        length = 0
+        for bnst in result.bnst_list(): # 访问每个词组
+            phrase = "".join(mrph.midasi for mrph in bnst.mrph_list())
+            phrase = phrase.replace("\␣", " ")
+            print("  " * length + phrase)
+            dumper.write("  " * length + phrase + "\n")
+            length = length + len(phrase)
+            if length > 80:
+                length = 0
+
+        dumper.write("\n")
         print("=================================")
         print("词素")
         for mrph in result.mrph_list(): # 访问每个词素
             if mrph.midasi in {"、", "。", "「", "」", "\␣"}:
                 continue
-            message = "\tID:{}, 词汇:{}, 读法:{}, 原形:{}, 词性:{}, 词性细分:{}, 活用型:{}, 活用形:{}, 语义信息:{}, 代表符号:{}".format(
+            message = "ID:{}, 词汇:{}, 读法:{}, 原形:{}, 词性:{}, 词性细分:{}, 活用型:{}, 活用形:{}, 语义信息:{}, 代表符号:{}".format(
                 mrph.mrph_id, mrph.midasi, mrph.yomi, mrph.genkei, mrph.hinsi, mrph.bunrui, mrph.katuyou1, mrph.katuyou2, mrph.imis, mrph.repname);
-            print(message)
-            dumper.write(message + "\n")
+            print("\t" + message)
+            dumper.write("### " + message + "\n")
             # use exact matching to find exact meaning
             dictcheck = jmd.lookup(mrph.genkei)
             if len(dictcheck.entries) == 0:
@@ -85,26 +97,18 @@ def mainloop(file, database, savedump, records, orderby):
                     dictcheck = jmd.lookup(mrph.yomi)
             if len(dictcheck.entries) > 0:
                 desc = ""
+                print("\n")
+                dumper.write("\n")
                 for entry in dictcheck.entries:
-                    desc = desc + entry.text(compact=False, no_id=True) + "\n"
-                #if mrph.hinsi in {"名詞", "形容詞", "動詞", "接続詞", "指示詞", "副詞"}:
-                print("\n" + desc)
-                dumper.write("\n" + desc + "\n")
+                    text = entry.text(compact=False, no_id=True)
+                    print(text)
+                    dumper.write("- " + text + "\n")
+                    desc = desc + text + "\n"
+                print("\n")
+                dumper.write("\n")
                 dictcursor.execute('INSERT INTO words (name, desc, count) VALUES ("{}", "{}", "{}") ON CONFLICT (name) DO UPDATE SET count = count + 1'
                                     .format(mrph.genkei.replace('"', '""'), desc.replace('"', '""'), 1))
         jumandict.commit()
-
-        print("=================================")
-        print(userinput)
-        print("=================================")
-        length = 0
-        for bnst in result.bnst_list(): # 访问每个词组
-            phrase = "".join(mrph.midasi for mrph in bnst.mrph_list())
-            phrase = phrase.replace("\␣", " ")
-            print("  " * length + phrase)
-            length = length + len(phrase)
-            if length > 80:
-                length = 0
 
         if file != "":
             break

@@ -41,14 +41,14 @@ def mainloop(file, database, savedump, records, orderby, guimode):
     uifont = "Ariel 32"
     left_column_layout = [
         [sg.T("输入日语"), sg.FolderBrowse(),],
-        [sg.Multiline("", size=(60,10) , key="nihongo"),],
+        [sg.Multiline("", size=(75,10) , key="nihongo"),],
         [sg.Button("分析", size=(30,3), font=uifont, button_color=('white','green'), key="submit"),
          sg.Button("退出", size=(30,3), font=uifont, button_color=('white','red'), key="exit")],
-        [sg.Listbox(values=[], enable_events=True, size=(60, 20), key="parsedwords")],
+        [sg.Listbox(values=[], enable_events=True, size=(75, 20), key="parsedwords")],
     ]
     right_column_layout = [
         [sg.T("词汇意义")],
-        [sg.Listbox(values=[], enable_events=True, size=(60, 35), key="foundentries")],
+        [sg.Listbox(values=[], enable_events=True, size=(75, 33), key="foundentries")],
     ]
     layout = [
         [
@@ -109,7 +109,6 @@ def mainloop(file, database, savedump, records, orderby, guimode):
                     desc = ""
                     for entry in dictcheck.entries:
                         desc = desc + entry.text(compact=False, no_id=True) + "\n"
-                    #if mrph.hinsi in {"名詞", "形容詞", "動詞", "接続詞", "指示詞", "副詞"}:
                     print("\n" + desc)
                     dumper.write("\n" + desc + "\n")
                     dictcursor.execute('INSERT INTO words (name, desc, count) VALUES ("{}", "{}", "{}") ON CONFLICT (name) DO UPDATE SET count = count + 1'
@@ -125,7 +124,6 @@ def mainloop(file, database, savedump, records, orderby, guimode):
             print("selectedid=" + str(selectedid) + " among " + str(len(resultlist)) + " entries")
             foundentries = []
             for mrph in resultlist: # 访问每个词素
-                print("mrph.mrph_id=" + str(mrph.mrph_id))
                 if selectedid != mrph.mrph_id:
                     continue
                 message = "\tID:{}, 词汇:{}, 读法:{}, 原形:{}, 词性:{}, 词性细分:{}, 活用型:{}, 活用形:{}, 语义信息:{}, 代表符号:{}".format(
