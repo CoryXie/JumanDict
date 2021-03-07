@@ -68,7 +68,8 @@ def mainloop(file, database, savedump, records, orderby):
         dumper.write("## "+ userinput + "\n\n")
 
         result = knp.parse(userinput.replace("\n", ""))
-
+        dumper.write("```\n")
+        dumper.write(userinput + "\n")
         length = 0
         for bnst in result.bnst_list(): # 访问每个词组
             phrase = "".join(mrph.midasi for mrph in bnst.mrph_list())
@@ -79,7 +80,7 @@ def mainloop(file, database, savedump, records, orderby):
             if length > 80:
                 length = 0
 
-        dumper.write("\n")
+        dumper.write("```\n")
         print("=================================")
         print("词素")
         for mrph in result.mrph_list(): # 访问每个词素
@@ -102,8 +103,9 @@ def mainloop(file, database, savedump, records, orderby):
                 for entry in dictcheck.entries:
                     text = entry.text(compact=False, no_id=True)
                     print(text)
-                    dumper.write("- " + text + "\n")
                     desc = desc + text + "\n"
+                    text.replace("|", "\|")
+                    dumper.write("- " + text + "\n")
                 print("\n")
                 dumper.write("\n")
                 dictcursor.execute('INSERT INTO words (name, desc, count) VALUES ("{}", "{}", "{}") ON CONFLICT (name) DO UPDATE SET count = count + 1'
