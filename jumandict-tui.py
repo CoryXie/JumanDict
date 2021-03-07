@@ -101,10 +101,9 @@ def mainloop(file, database, savedump, records, orderby):
                 print("\n")
                 dumper.write("\n")
                 for entry in dictcheck.entries:
-                    text = entry.text(compact=False, no_id=True)
+                    text = entry.text(compact=True, no_id=True)
                     print(text)
                     desc = desc + text + "\n"
-                    text.replace("|", "\|")
                     dumper.write("- " + text + "\n")
                 print("\n")
                 dumper.write("\n")
