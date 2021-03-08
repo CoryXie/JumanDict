@@ -6,6 +6,7 @@ from jamdict import Jamdict
 import sqlite3
 import sys
 import click
+import re
 
 @click.command()
 @click.option('--file', '-f', default="", help='File to be analyzed for study.')
@@ -14,7 +15,9 @@ import click
 @click.option('--records', '-r', default=5, help='Number of history records to show.')
 @click.option('--orderby', '-o', default="id", type=click.Choice(['id', 'count'], case_sensitive=False),
                 help='Sort order of history records to show.')
-def mainloop(file, database, savedump, records, orderby):
+@click.option('--compact', '-c', default="false", type=click.Choice(['true', 'false'], case_sensitive=False),
+                help='Whether use compat form of senses')
+def mainloop(file, database, savedump, records, orderby, compact):
     """Get user Janpanse input then parse it and record new words into database."""
     jmd = Jamdict()
     knp = KNP()
@@ -101,12 +104,35 @@ def mainloop(file, database, savedump, records, orderby):
                 print("\n")
                 dumper.write("\n")
                 for entry in dictcheck.entries:
-                    text = entry.text(compact=True, no_id=True)
-                    print(text)
+                    text = ""
+                    if compact == "true":
+                        text = entry.text(compact=False, no_id=True)
+                        text = re.sub('[`\']', '"', text)
+                        print(text)
+                    else:
+                        tmp = []
+                        if entry.kana_forms:
+                            tmp.append(entry.kana_forms[0].text)
+                        if entry.kanji_forms:
+                            tmp.append("({})".format(entry.kanji_forms[0].text))
+                        header = " ".join(tmp)
+                        tmp = []
+                        if entry.senses:
+                            for sense, idx in zip(entry.senses, range(len(entry.senses))):
+                                tmps = [str(x) for x in sense.gloss]
+                                if sense.pos:
+                                    s = '{gloss} ({pos})'.format(gloss='/'.join(tmps), pos=('(%s)' % '|'.join(sense.pos)))
+                                else:
+                                    s = '/'.join(tmps)
+                                s = re.sub('[`\']', '"', s)
+                                tmp.append('    {i}. {s}\n'.format(i=idx + 1, s=s))
+                        senses = "".join(tmp)
+                        print(header)
+                        print(senses)
+                        text = header + "\n" + senses
                     desc = desc + text + "\n"
+                    text = re.sub('[|]', '\|', text)
                     dumper.write("- " + text + "\n")
-                print("\n")
-                dumper.write("\n")
                 dictcursor.execute('INSERT INTO words (name, desc, count) VALUES ("{}", "{}", "{}") ON CONFLICT (name) DO UPDATE SET count = count + 1'
                                     .format(mrph.genkei.replace('"', '""'), desc.replace('"', '""'), 1))
         jumandict.commit()
