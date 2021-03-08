@@ -89,8 +89,25 @@ def mainloop(file, database, savedump, records, orderby, compact):
         for mrph in result.mrph_list(): # 访问每个词素
             if mrph.midasi in {"、", "。", "「", "」", "\␣"}:
                 continue
-            message = "ID:{}, 词汇:{}, 读法:{}, 原形:{}, 词性:{}, 词性细分:{}, 活用型:{}, 活用形:{}, 语义信息:{}, 代表符号:{}".format(
-                mrph.mrph_id, mrph.midasi, mrph.yomi, mrph.genkei, mrph.hinsi, mrph.bunrui, mrph.katuyou1, mrph.katuyou2, mrph.imis, mrph.repname);
+            message = "ID:{}".format(mrph.mrph_id)
+            if mrph.midasi:
+                message += ", 词汇:{}".format(mrph.midasi)
+            if mrph.yomi:
+                message += ", 读法:{}".format(mrph.yomi)
+            if mrph.genkei:
+                message += ", 原形:{}".format(mrph.genkei)
+            if mrph.hinsi and mrph.hinsi != "*":
+                message += ", 词性:{}".format(mrph.hinsi)
+            if mrph.bunrui and mrph.bunrui != "*":
+                message += ", 词性细分:{}".format(mrph.bunrui)
+            if mrph.katuyou1 and mrph.katuyou1 != "*":
+                message += ", 活用型:{}".format(mrph.katuyou1)
+            if mrph.katuyou2 and mrph.katuyou2 != "*":
+                message += ", 活用形:{}".format(mrph.katuyou2)
+            if mrph.imis and mrph.imis != "NIL":
+                message += ", {}".format(mrph.imis) #语义信息:
+            elif mrph.repname:
+                message += ", 代表符号:{}".format(mrph.repname)
             print("\t" + message)
             dumper.write("### " + message + "\n")
             # use exact matching to find exact meaning
