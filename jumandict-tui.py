@@ -29,7 +29,7 @@ def mainloop(file, database, savedump, records, orderby, compact):
     dumper.write("# 日语学习记录\n\n")
 
     while True:
-        userinput = ""
+        userinputs = ""
         if file == "":
             try:
                 if not click.confirm('想要进入编辑器输入日文句子或段落进行分析吗?'):
@@ -54,105 +54,106 @@ def mainloop(file, database, savedump, records, orderby, compact):
                     print('{} [{} ({}次)]:\n'.format(row[0], row[1], row[3]))
                     print(row[2])
 
-            userinput = click.edit()
-            if userinput is None:
+            userinputs = click.edit()
+            if userinputs is None:
                 print("你啥也没输入啊！")
                 continue
         else:
             with open(file, 'r') as reader:
                 lines = reader.readlines()
-                userinput = "".join(lines)
+                userinputs = "".join(lines)
 
-        userinput = userinput.strip()
-        userinput = userinput.encode('utf-8','surrogatepass').decode('utf-8')
+        inputsentences = [x+"。" for x in userinputs.split("。") if x.strip() != ""]
+        for userinput in inputsentences:
+            userinput = userinput.encode('utf-8','surrogatepass').decode('utf-8')
 
-        print("=================================")
-        print(userinput)
-        dumper.write("## "+ userinput + "\n\n")
+            print("=================================")
+            print(userinput)
+            dumper.write("## "+ userinput + "\n\n")
 
-        result = knp.parse(userinput.replace("\n", ""))
-        dumper.write("```\n")
-        dumper.write(userinput + "\n")
-        length = 0
-        for bnst in result.bnst_list(): # 访问每个词组
-            phrase = "".join(mrph.midasi for mrph in bnst.mrph_list())
-            phrase = phrase.replace("\␣", " ")
-            print("  " * length + phrase)
-            dumper.write("  " * length + phrase + "\n")
-            length = length + len(phrase)
-            if length > 80:
-                length = 0
+            result = knp.parse(userinput.replace("\n", ""))
+            dumper.write("```\n")
+            dumper.write(userinput + "\n")
+            length = 0
+            for bnst in result.bnst_list(): # 访问每个词组
+                phrase = "".join(mrph.midasi for mrph in bnst.mrph_list())
+                phrase = phrase.replace("\␣", " ")
+                print("  " * length + phrase)
+                dumper.write("  " * length + phrase + "\n")
+                length = length + len(phrase)
+                if length > 80:
+                    length = 0
 
-        dumper.write("```\n")
-        print("=================================")
-        print("词素")
-        for mrph in result.mrph_list(): # 访问每个词素
-            if mrph.midasi in {"、", "。", "「", "」", "\␣"}:
-                continue
-            message = "ID:{}".format(mrph.mrph_id)
-            if mrph.midasi:
-                message += ", 词汇:{}".format(mrph.midasi)
-            if mrph.yomi:
-                message += ", 读法:{}".format(mrph.yomi)
-            if mrph.genkei:
-                message += ", 原形:{}".format(mrph.genkei)
-            if mrph.hinsi and mrph.hinsi != "*":
-                message += ", 词性:{}".format(mrph.hinsi)
-            if mrph.bunrui and mrph.bunrui != "*":
-                message += ", 词性细分:{}".format(mrph.bunrui)
-            if mrph.katuyou1 and mrph.katuyou1 != "*":
-                message += ", 活用型:{}".format(mrph.katuyou1)
-            if mrph.katuyou2 and mrph.katuyou2 != "*":
-                message += ", 活用形:{}".format(mrph.katuyou2)
-            if mrph.imis and mrph.imis != "NIL":
-                message += ", {}".format(mrph.imis) #语义信息:
-            elif mrph.repname:
-                message += ", 代表符号:{}".format(mrph.repname)
-            print("\t" + message)
-            dumper.write("### " + message + "\n")
-            # use exact matching to find exact meaning
-            dictcheck = jmd.lookup(mrph.genkei)
-            if len(dictcheck.entries) == 0:
-                dictcheck = jmd.lookup(mrph.midasi)
+            dumper.write("```\n")
+            print("=================================")
+            print("词素")
+            for mrph in result.mrph_list(): # 访问每个词素
+                if mrph.midasi in {"、", "。", "「", "」", "\␣"}:
+                    continue
+                message = "ID:{}".format(mrph.mrph_id)
+                if mrph.midasi:
+                    message += ", 词汇:{}".format(mrph.midasi)
+                if mrph.yomi:
+                    message += ", 读法:{}".format(mrph.yomi)
+                if mrph.genkei:
+                    message += ", 原形:{}".format(mrph.genkei)
+                if mrph.hinsi and mrph.hinsi != "*":
+                    message += ", 词性:{}".format(mrph.hinsi)
+                if mrph.bunrui and mrph.bunrui != "*":
+                    message += ", 词性细分:{}".format(mrph.bunrui)
+                if mrph.katuyou1 and mrph.katuyou1 != "*":
+                    message += ", 活用型:{}".format(mrph.katuyou1)
+                if mrph.katuyou2 and mrph.katuyou2 != "*":
+                    message += ", 活用形:{}".format(mrph.katuyou2)
+                if mrph.imis and mrph.imis != "NIL":
+                    message += ", {}".format(mrph.imis) #语义信息:
+                elif mrph.repname:
+                    message += ", 代表符号:{}".format(mrph.repname)
+                print("\t" + message)
+                dumper.write("### " + message + "\n")
+                # use exact matching to find exact meaning
+                dictcheck = jmd.lookup(mrph.genkei)
                 if len(dictcheck.entries) == 0:
-                    dictcheck = jmd.lookup(mrph.yomi)
-            if len(dictcheck.entries) > 0:
-                desc = ""
-                print("\n")
-                dumper.write("\n")
-                for entry in dictcheck.entries:
-                    text = ""
-                    if compact == "true":
-                        text = entry.text(compact=False, no_id=True)
-                        text = re.sub('[`\']', '"', text)
-                        print(text)
-                    else:
-                        tmp = []
-                        if entry.kana_forms:
-                            tmp.append(entry.kana_forms[0].text)
-                        if entry.kanji_forms:
-                            tmp.append("({})".format(entry.kanji_forms[0].text))
-                        header = " ".join(tmp)
-                        tmp = []
-                        if entry.senses:
-                            for sense, idx in zip(entry.senses, range(len(entry.senses))):
-                                tmps = [str(x) for x in sense.gloss]
-                                if sense.pos:
-                                    s = '{gloss} ({pos})'.format(gloss='/'.join(tmps), pos=('(%s)' % '|'.join(sense.pos)))
-                                else:
-                                    s = '/'.join(tmps)
-                                s = re.sub('[`\']', '"', s)
-                                tmp.append('    {i}. {s}\n'.format(i=idx + 1, s=s))
-                        senses = "".join(tmp)
-                        print(header)
-                        print(senses)
-                        text = header + "\n" + senses
-                    desc = desc + text + "\n"
-                    text = re.sub('[|]', '\|', text)
-                    dumper.write("- " + text + "\n")
-                dictcursor.execute('INSERT INTO words (name, desc, count) VALUES ("{}", "{}", "{}") ON CONFLICT (name) DO UPDATE SET count = count + 1'
-                                    .format(mrph.genkei.replace('"', '""'), desc.replace('"', '""'), 1))
-        jumandict.commit()
+                    dictcheck = jmd.lookup(mrph.midasi)
+                    if len(dictcheck.entries) == 0:
+                        dictcheck = jmd.lookup(mrph.yomi)
+                if len(dictcheck.entries) > 0:
+                    desc = ""
+                    print("\n")
+                    dumper.write("\n")
+                    for entry in dictcheck.entries:
+                        text = ""
+                        if compact == "true":
+                            text = entry.text(compact=False, no_id=True)
+                            text = re.sub('[`\']', '"', text)
+                            print(text)
+                        else:
+                            tmp = []
+                            if entry.kana_forms:
+                                tmp.append(entry.kana_forms[0].text)
+                            if entry.kanji_forms:
+                                tmp.append("({})".format(entry.kanji_forms[0].text))
+                            header = " ".join(tmp)
+                            tmp = []
+                            if entry.senses:
+                                for sense, idx in zip(entry.senses, range(len(entry.senses))):
+                                    tmps = [str(x) for x in sense.gloss]
+                                    if sense.pos:
+                                        s = '{gloss} ({pos})'.format(gloss='/'.join(tmps), pos=('(%s)' % '|'.join(sense.pos)))
+                                    else:
+                                        s = '/'.join(tmps)
+                                    s = re.sub('[`\']', '"', s)
+                                    tmp.append('    {i}. {s}\n'.format(i=idx + 1, s=s))
+                            senses = "".join(tmp)
+                            print(header)
+                            print(senses)
+                            text = header + "\n" + senses
+                        desc = desc + text + "\n"
+                        text = re.sub('[|]', '\|', text)
+                        dumper.write("- " + text + "\n")
+                    dictcursor.execute('INSERT INTO words (name, desc, count) VALUES ("{}", "{}", "{}") ON CONFLICT (name) DO UPDATE SET count = count + 1'
+                                        .format(mrph.genkei.replace('"', '""'), desc.replace('"', '""'), 1))
+            jumandict.commit()
 
         if file != "":
             break
