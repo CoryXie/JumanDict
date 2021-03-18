@@ -17,10 +17,21 @@ import re
                 help='Sort order of history records to show.')
 @click.option('--compact', '-c', default="false", type=click.Choice(['true', 'false'], case_sensitive=False),
                 help='Whether use compat form of senses')
-def mainloop(file, database, savedump, records, orderby, compact):
+@click.option('--known', '-k', default="knownlist.cfg", help='File with known words not to shown.')
+def mainloop(file, database, savedump, records, orderby, compact, known):
     """Get user Janpanse input then parse it and record new words into database."""
     jmd = Jamdict()
     knp = KNP()
+
+    knownlist = {}
+    with open(known, 'r') as reader:
+        lines = reader.readlines()
+        for line in lines:
+            if re.match("^#", line):
+                continue
+            entry = line.split(",")
+            if len(entry) == 2:
+                knownlist[entry[0].strip()] = entry[1].strip()
 
     jumandict = sqlite3.connect(database)
     dictcursor = jumandict.cursor()
@@ -65,6 +76,7 @@ def mainloop(file, database, savedump, records, orderby, compact):
 
         inputsentences = [x+"。" for x in userinputs.split("。") if x.strip() != ""]
         for userinput in inputsentences:
+            userinput = userinput.strip()
             userinput = userinput.encode('utf-8','surrogatepass').decode('utf-8')
 
             print("=================================")
@@ -88,7 +100,15 @@ def mainloop(file, database, savedump, records, orderby, compact):
             print("=================================")
             print("词素")
             for mrph in result.mrph_list(): # 访问每个词素
-                if mrph.midasi in {"、", "。", "「", "」", "\␣"}:
+                found = False
+                for known in knownlist.keys():
+                    if mrph.genkei == known:
+                        types = knownlist[known].split("|")
+                        for type in types:
+                            if mrph.hinsi == type:
+                                found = True
+                                break
+                if found == True:
                     continue
                 message = "ID:{}".format(mrph.mrph_id)
                 if mrph.midasi:
@@ -147,7 +167,7 @@ def mainloop(file, database, savedump, records, orderby, compact):
                             senses = "".join(tmp)
                             print(header)
                             print(senses)
-                            text = header + "\n" + senses
+                            text = "**" + header + "**\n" + senses
                         desc = desc + text + "\n"
                         text = re.sub('[|]', '\|', text)
                         dumper.write("- " + text + "\n")
