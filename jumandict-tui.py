@@ -184,6 +184,8 @@ def mainloop(file, database, savedump, records, orderby, compact, known, verbose
                                         .format(mrph.genkei.replace('"', '""'), desc.replace('"', '""'), 1))
             jumandict.commit()
 
+        dumper.flush()
+
         if file != "":
             break
 
