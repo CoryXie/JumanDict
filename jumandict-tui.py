@@ -18,7 +18,11 @@ import re
 @click.option('--compact', '-c', default="false", type=click.Choice(['true', 'false'], case_sensitive=False),
                 help='Whether use compat form of senses')
 @click.option('--known', '-k', default="knownlist.cfg", help='File with known words not to shown.')
-def mainloop(file, database, savedump, records, orderby, compact, known):
+@click.option('--verbose', '-v', default="false", type=click.Choice(['true', 'false'], case_sensitive=False),
+                help='Whether verbose showing all words even known')
+@click.option('--nosense', '-n', default="false", type=click.Choice(['true', 'false'], case_sensitive=False),
+                help='Whether disable all senses')
+def mainloop(file, database, savedump, records, orderby, compact, known, verbose, nosense):
     """Get user Janpanse input then parse it and record new words into database."""
     jmd = Jamdict()
     knp = KNP()
@@ -98,7 +102,6 @@ def mainloop(file, database, savedump, records, orderby, compact, known):
 
             dumper.write("```\n")
             print("=================================")
-            print("词素")
             for mrph in result.mrph_list(): # 访问每个词素
                 found = False
                 for known in knownlist.keys():
@@ -108,8 +111,10 @@ def mainloop(file, database, savedump, records, orderby, compact, known):
                             if mrph.hinsi == type:
                                 found = True
                                 break
-                if found == True:
+
+                if (found == True) and (verbose == "false" or mrph.hinsi == "特殊"):
                     continue
+
                 message = "ID:{}".format(mrph.mrph_id)
                 if mrph.midasi:
                     message += ", 词汇:{}".format(mrph.midasi)
@@ -131,6 +136,10 @@ def mainloop(file, database, savedump, records, orderby, compact, known):
                     message += ", 代表符号:{}".format(mrph.repname)
                 print("\t" + message)
                 dumper.write("### " + message + "\n")
+
+                if nosense == "true" or (found == True and verbose == "false"):
+                    continue
+
                 # use exact matching to find exact meaning
                 dictcheck = jmd.lookup(mrph.genkei)
                 if len(dictcheck.entries) == 0:
