@@ -132,3 +132,5 @@ dmypy.json
 
 *.db
 *.txt
+dumping.md
+config.ini

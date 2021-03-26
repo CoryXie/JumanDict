@@ -3,15 +3,25 @@
 from pyknp import Juman
 from pyknp import KNP
 from jamdict import Jamdict
+import configparser
 import sqlite3
 import sys
 import click
 import re
+import requests
+import random
+import json
+from hashlib import md5
+
+# Generate salt and sign
+def make_md5(s, encoding='utf-8'):
+    return md5(s.encode(encoding)).hexdigest()
 
 @click.command()
 @click.option('--file', '-f', default="", help='File to be analyzed for study.')
-@click.option('--savedump', '-s', default="dumping.txt", help='File to be saved with dump for study.')
+@click.option('--savedump', '-s', default="dumping.md", help='File to be saved with dump for study.')
 @click.option('--database', '-d', default="records.db", help='Database file to be used for record saving.')
+@click.option('--cfgfile', '-i', default="config.ini", help='Config file to be used.')
 @click.option('--records', '-r', default=5, help='Number of history records to show.')
 @click.option('--orderby', '-o', default="id", type=click.Choice(['id', 'count'], case_sensitive=False),
                 help='Sort order of history records to show.')
@@ -22,7 +32,11 @@ import re
                 help='Whether verbose showing all words even known')
 @click.option('--nosense', '-n', default="false", type=click.Choice(['true', 'false'], case_sensitive=False),
                 help='Whether disable all senses')
-def mainloop(file, database, savedump, records, orderby, compact, known, verbose, nosense):
+@click.option('--translate', '-t', default="true", type=click.Choice(['true', 'false'], case_sensitive=False),
+                help='Whether translate inputs')
+@click.option('--destlang', '-l', default="zh", type=click.Choice(['zh', 'cht', 'en'], case_sensitive=True),
+                help='Which target language to translate')
+def mainloop(file, savedump, database, cfgfile, records, orderby, compact, known, verbose, nosense, translate, destlang):
     """Get user Janpanse input then parse it and record new words into database."""
     jmd = Jamdict()
     knp = KNP()
@@ -36,6 +50,20 @@ def mainloop(file, database, savedump, records, orderby, compact, known, verbose
             entry = line.split(",")
             if len(entry) == 2:
                 knownlist[entry[0].strip()] = entry[1].strip()
+
+    appid = ""
+    appkey = ""
+    if translate == "true":
+        # See https://fanyi-api.baidu.com/
+        # See https://fanyi-api.baidu.com/api/trans/product/desktop?req=developer
+        # See https://docs.python.org/3/library/configparser.html
+        config = configparser.ConfigParser()
+        config.read(cfgfile)
+        # Set your own appid/appkey.
+        appid = config['api.fanyi.baidu.com']['appid']
+        appkey = config['api.fanyi.baidu.com']['appkey']
+        print("appid=" + appid)
+        print("appkey=" + appkey)
 
     jumandict = sqlite3.connect(database)
     dictcursor = jumandict.cursor()
@@ -77,6 +105,42 @@ def mainloop(file, database, savedump, records, orderby, compact, known, verbose
             with open(file, 'r') as reader:
                 lines = reader.readlines()
                 userinputs = "".join(lines)
+
+        if translate == "true":
+            print("appid=" + appid)
+            print("appkey=" + appkey)
+            # For list of language codes, please refer to `https://api.fanyi.baidu.com/doc/21`
+            from_lang = 'jp'
+            to_lang = destlang
+
+            endpoint = 'http://api.fanyi.baidu.com'
+            path = '/api/trans/vip/translate'
+            url = endpoint + path
+
+            salt = random.randint(32768, 65536)
+            sign = make_md5(appid + userinputs + str(salt) + appkey)
+
+            # Build request
+            headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+            payload = {'appid': appid, 'q': userinputs, 'from': from_lang, 'to': to_lang, 'salt': salt, 'sign': sign}
+
+            # Send request
+            r = requests.post(url, params=payload, headers=headers)
+            result = r.json()
+
+            # Show response
+            print("=================================")
+            print(userinputs)
+            dumper.write("```\n")
+            dumper.write(userinputs)
+            print("=================================")
+            dumper.write("=================================\n")
+            trans_result = result["trans_result"]
+            for i in range(len(trans_result)):
+                dst = trans_result[i]["dst"]
+                print(dst)
+                dumper.write(dst + "\n")
+            dumper.write("```\n")
 
         inputsentences = [x+"。" for x in userinputs.split("。") if x.strip() != ""]
         for userinput in inputsentences:
