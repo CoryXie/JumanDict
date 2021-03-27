@@ -28,7 +28,7 @@ def make_md5(s, encoding='utf-8'):
 @click.option('--compact', '-c', default="false", type=click.Choice(['true', 'false'], case_sensitive=False),
                 help='Whether use compat form of senses')
 @click.option('--known', '-k', default="knownlist.cfg", help='File with known words not to shown.')
-@click.option('--verbose', '-v', default="false", type=click.Choice(['true', 'false'], case_sensitive=False),
+@click.option('--verbose', '-v', default="half", type=click.Choice(['full', 'half', 'none'], case_sensitive=False),
                 help='Whether verbose showing all words even known')
 @click.option('--nosense', '-n', default="false", type=click.Choice(['true', 'false'], case_sensitive=False),
                 help='Whether disable all senses')
@@ -62,8 +62,8 @@ def mainloop(file, savedump, database, cfgfile, records, orderby, compact, known
         # Set your own appid/appkey.
         appid = config['api.fanyi.baidu.com']['appid']
         appkey = config['api.fanyi.baidu.com']['appkey']
-        print("appid=" + appid)
-        print("appkey=" + appkey)
+        #print("appid=" + appid)
+        #print("appkey=" + appkey)
 
     jumandict = sqlite3.connect(database)
     dictcursor = jumandict.cursor()
@@ -107,8 +107,6 @@ def mainloop(file, savedump, database, cfgfile, records, orderby, compact, known
                 userinputs = "".join(lines)
 
         if translate == "true":
-            print("appid=" + appid)
-            print("appkey=" + appkey)
             # For list of language codes, please refer to `https://api.fanyi.baidu.com/doc/21`
             from_lang = 'jp'
             to_lang = destlang
@@ -176,7 +174,7 @@ def mainloop(file, savedump, database, cfgfile, records, orderby, compact, known
                                 found = True
                                 break
 
-                if (found == True) and (verbose == "false" or mrph.hinsi == "特殊"):
+                if ((found == True) and (verbose == "none")) or (mrph.hinsi == "特殊"):
                     continue
 
                 message = "ID:{}".format(mrph.mrph_id)
@@ -201,7 +199,7 @@ def mainloop(file, savedump, database, cfgfile, records, orderby, compact, known
                 print("\t" + message)
                 dumper.write("### " + message + "\n")
 
-                if nosense == "true" or (found == True and verbose == "false"):
+                if nosense == "true" or (found == True and verbose == "half"):
                     continue
 
                 # use exact matching to find exact meaning
